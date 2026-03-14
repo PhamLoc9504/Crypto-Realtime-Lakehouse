@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      # Sửa lại thành port nội bộ 29092
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: loc_admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: crypto_dw
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data_final:/var/lib/postgresql/data # Đổi tên volume để ép nó tạo mới
+  # ... Giữ nguyên các phần zookeeper, kafka, postgres, kafka-ui cũ ...
+  producer:
+    build: .
+    command: python producer.py
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+
+  consumer:
+    build: .
+    command: python consumer.py
+    depends_on:
+      - kafka
+      - postgres
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      DB_HOST: postgres
+
+  elt_job:
+    build: .
+    command: python elt_job.py
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: postgres
+
+  dashboard:
+    build: .
+    command: streamlit run dashboard.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: postgres
+
+volumes:
+  db_data_final: # Tên volume mới hoàn toàn

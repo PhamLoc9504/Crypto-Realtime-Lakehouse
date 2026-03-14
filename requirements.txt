@@ -1,0 +1,9 @@
+confluent-kafka
+kafka-python
+psycopg2-binary
+requests
+pandas
+streamlit
+plotly
+aiohttp
+python-dotenv
