@@ -39,8 +39,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - db_data_final:/var/lib/postgresql/data # Đổi tên volume để ép nó tạo mới
-  # ... Giữ nguyên các phần zookeeper, kafka, postgres, kafka-ui cũ ...
+      - db_data_final:/var/lib/postgresql/data
   producer:
     build: .
     command: python producer.py
@@ -78,4 +77,4 @@ services:
       DB_HOST: postgres
 
 volumes:
-  db_data_final: # Tên volume mới hoàn toàn
+  db_data_final: 
